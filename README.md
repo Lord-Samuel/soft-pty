@@ -54,6 +54,18 @@ Same shape as node-pty so it's a drop-in for simple call sites — `spawn`, `.pi
 | `env` | `process.env` | |
 | `echo` | `false` | locally echo bytes passed to `write()` |
 | `encoding` | `'utf8'` | pass `null` to get raw `Buffer`s back instead of strings — binary safe |
+| `handleFlowControl` | `false` | intercept flow-control bytes in `write()` instead of forwarding them to the child (see below) |
+| `flowControlPause` | `'\x13'` (DC3/XOFF) | byte that triggers `pause()` when `handleFlowControl` is on |
+| `flowControlResume` | `'\x11'` (DC1/XON) | byte that triggers `resume()` when `handleFlowControl` is on |
+| `uid`, `gid`, `argv0` | — | passed straight through to `child_process.spawn` |
+
+## other node-pty methods this has
+
+- `pause()` / `resume()` — actually pauses/resumes the output streams, not cosmetic. Tested it: froze a counter mid-stream, confirmed it stopped incrementing, called resume, confirmed it picked back up.
+- flow control — if you pass `handleFlowControl: true`, writing the XOFF byte (`\x13`) calls `pause()` instead of forwarding it to the child's stdin, and XON (`\x11`) calls `resume()`. Same behavior node-pty documents (xterm.js uses this for backpressure).
+- `clear()` exists but does nothing. Real node-pty clears the terminal's actual scrollback buffer — there isn't one here, this thing just relays process output. Kept it as a no-op so code written against the real IPty interface doesn't throw calling it.
+- `term.on('data', cb)` / `term.on('exit', cb)` also work directly, not just `onData`/`onExit` — this extends EventEmitter and emits those events, so both styles are fine.
+
 
 ## bugs I found while testing this (fixed, but writing them down)
 
