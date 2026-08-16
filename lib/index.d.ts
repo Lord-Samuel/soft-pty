@@ -14,6 +14,12 @@ export interface ISpawnOptions {
   echo?: boolean;
   /** Pass null for raw Buffer 'data' chunks instead of decoded strings. */
   encoding?: string | null;
+  handleFlowControl?: boolean;
+  flowControlPause?: string;
+  flowControlResume?: string;
+  uid?: number;
+  gid?: number;
+  argv0?: string;
 }
 
 export interface IDisposable {
@@ -31,6 +37,7 @@ export declare class SoftPty {
   cols: number;
   rows: number;
   spawnError: Error | null;
+  handleFlowControl: boolean;
 
   constructor(file: string, args?: string[], opts?: ISpawnOptions);
 
@@ -39,18 +46,10 @@ export declare class SoftPty {
 
   write(data: string): void;
   resize(cols: number, rows: number): void;
-  kill(signal?: string): void;
-}
-
-export declare function spawn(
-  file: string,
-  args?: string[],
-  opts?: ISpawnOptions
-): SoftPty;
-
-  write(data: string): void;
-  resize(cols: number, rows: number): void;
-  kill(signal?: string): void;
+  kill(signal?: string, opts?: { graceMs?: number; escalate?: boolean }): void;
+  pause(): void;
+  resume(): void;
+  clear(): void;
 }
 
 export declare function spawn(
