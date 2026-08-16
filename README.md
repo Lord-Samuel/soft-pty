@@ -55,6 +55,16 @@ This mirrors `node-pty`'s surface closely enough to be a drop-in for simple call
 - Merges `stdout` and `stderr` chunks into a single `data` event in arrival order.
 - Optional local echo of writes via `opts.echo`, since there's no kernel-level echo without a real tty.
 
+## Correctness details that are easy to get wrong
+
+These aren't obvious from reading `child_process` docs casually, and this library handles all three so you don't have to rediscover them:
+
+- **Multi-byte UTF-8 characters split across chunk boundaries.** A naive `buffer.toString('utf8')` on each raw `'data'` chunk corrupts any multi-byte character (emoji, accented characters, CJK text, etc.) that happens to straddle two OS pipe reads — you'll see stray `\uFFFD` replacement characters. Each stream is decoded with a `StringDecoder`, which holds back incomplete trailing bytes until the next chunk completes the sequence.
+- **`'exit'` can fire before stdout/stderr are fully drained.** Node's own docs note this, but it's easy to miss: listening on `child.on('exit')` can fire before all buffered `'data'` events have been delivered, so you can end up capturing truncated (or completely empty) output — this is rare on a single spawn but becomes reproducible under concurrent load. This library waits for `'close'` instead, which Node guarantees only fires after every stdio stream has finished emitting its data.
+- **A failed spawn (e.g. `ENOENT`) never emits `'exit'` at all**, only `'error'` — and `EventEmitter` throws an uncaught exception if `'error'` is emitted with no listener attached. Most node-pty-style consumers only wire up `onData`/`onExit` and never touch `'error'`, so naively forwarding spawn errors can either hang a caller relying on `onExit` forever, or crash the whole process if `'error'` has no listener. This library only emits `'error'` when something is actually listening, and always synthesizes a terminal `onExit` call so the lifecycle resolves either way.
+
+There's also SIGTERM→SIGKILL escalation built into `kill()`: if the child traps or ignores the signal you send, it's forcefully killed after a grace period (default 3000ms, configurable via `kill(signal, { graceMs })`, or disable with `{ escalate: false }`).
+
 ## Honest limitations (read before you rely on this)
 
 This is **not** a pty. Be deliberate about where you use it:
@@ -72,7 +82,3 @@ If any of these matter for your use case, use `node-pty` instead — it wraps a 
 - Running short, non-interactive, or line-oriented commands and capturing their output.
 - Simple REPLs where you write a line, read a line back.
 - Environments where you can't ship a native addon (odd CI images, certain sandboxes) but still want colorized output and a `node-pty`-shaped API.
-
-## License
-
-MIT
