@@ -1,3 +1,10 @@
+export interface IKillOptions {
+  /** Milliseconds to wait before escalating to SIGKILL. Default 3000. */
+  graceMs?: number;
+  /** Set false to disable SIGKILL escalation entirely. Default true. */
+  escalate?: boolean;
+}
+
 export interface ISpawnOptions {
   name?: string;
   cols?: number;
@@ -21,6 +28,7 @@ export declare class SoftPty {
   process: string;
   cols: number;
   rows: number;
+  spawnError: Error | null;
 
   constructor(file: string, args?: string[], opts?: ISpawnOptions);
 
