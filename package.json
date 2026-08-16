@@ -1,0 +1,24 @@
+{
+  "name": "soft-pty",
+  "version": "0.1.0",
+  "description": "A pure-JS, spawn-based approximation of node-pty's API. No native bindings, no real TTY — just child_process.spawn with piped stdio, dressed up to behave enough like a pty for simple use cases (REPLs, CLIs, colored output).",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "pty",
+    "terminal",
+    "spawn",
+    "node-pty",
+    "shell"
+  ],
+  "license": "MIT"
+}
