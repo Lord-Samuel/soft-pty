@@ -12,6 +12,8 @@ export interface ISpawnOptions {
   cwd?: string;
   env?: { [key: string]: string | undefined };
   echo?: boolean;
+  /** Pass null for raw Buffer 'data' chunks instead of decoded strings. */
+  encoding?: string | null;
 }
 
 export interface IDisposable {
@@ -32,8 +34,19 @@ export declare class SoftPty {
 
   constructor(file: string, args?: string[], opts?: ISpawnOptions);
 
-  onData(callback: (data: string) => void): IDisposable;
+  onData(callback: (data: string | Buffer) => void): IDisposable;
   onExit(callback: (e: IExitEvent) => void): IDisposable;
+
+  write(data: string): void;
+  resize(cols: number, rows: number): void;
+  kill(signal?: string): void;
+}
+
+export declare function spawn(
+  file: string,
+  args?: string[],
+  opts?: ISpawnOptions
+): SoftPty;
 
   write(data: string): void;
   resize(cols: number, rows: number): void;
